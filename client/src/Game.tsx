@@ -16,10 +16,11 @@ function Game({ userId }: any) {
 
   const [playedToday, setPlayedToday] = useState(false);
   const [gameId, setGameId] = useState("");
-  const [lastGuess, setLastGuess] = useState("");
   const [correctWord, setCorrectWord] = useState("");
 
-  // ✅ Start game (NO WORD IN FRONTEND)
+  // =========================
+  // START GAME (BACKEND WORD)
+  // =========================
   useEffect(() => {
     axios
       .get(`https://wordle-game-h86q.onrender.com/game/daily/${userId}`)
@@ -29,46 +30,47 @@ function Game({ userId }: any) {
 
         const type = played ? "practice" : "daily";
 
-        const r = await axios.post("https://wordle-game-h86q.onrender.com/game/start", {
-          userId,
-          type
-        });
+        const r = await axios.post(
+          "https://wordle-game-h86q.onrender.com/game/start",
+          { userId, type }
+        );
 
         setGameId(r.data.gameId);
       });
   }, [userId]);
 
-  // ✅ Keyboard handler
+  // =========================
+  // KEYBOARD HANDLER
+  // =========================
   useEffect(() => {
     const handleKey = async (e: KeyboardEvent) => {
       if (!gameId || gameOver) return;
 
       const key = e.key.toUpperCase();
 
-      setGrid(prevGrid => {
-        const newGrid = prevGrid.map(r => [...r]);
+      // ================= LETTER INPUT =================
+      if (/^[A-Z]$/.test(key) && col < 5) {
+        setGrid(prev => {
+          const newGrid = prev.map(r => [...r]);
+          newGrid[row][col] = key;
+          return newGrid;
+        });
+        setCol(c => c + 1);
+      }
 
-        let newRow = row;
-        let newCol = col;
+      // ================= BACKSPACE =================
+      else if (e.key === "Backspace" && col > 0) {
+        setGrid(prev => {
+          const newGrid = prev.map(r => [...r]);
+          newGrid[row][col - 1] = "";
+          return newGrid;
+        });
+        setCol(c => c - 1);
+      }
 
-        // LETTER
-        if (/^[A-Z]$/.test(key) && newCol < 5) {
-          newGrid[newRow][newCol] = key;
-          setCol(newCol + 1);
-        }
-
-        // BACKSPACE
-        else if (e.key === "Backspace" && newCol > 0) {
-          newGrid[newRow][newCol - 1] = "";
-          setCol(newCol - 1);
-        }
-
-        return newGrid;
-      });
-
-      // ENTER handled separately (IMPORTANT)
-      if (e.key === "Enter" && col === 5) {
-        const guess = grid[row].join("");
+      // ================= ENTER =================
+      else if (e.key === "Enter" && col === 5) {
+        const guess = [...grid[row]].join("");
 
         try {
           const res = await axios.post(
@@ -81,14 +83,18 @@ function Game({ userId }: any) {
             return;
           }
 
-          const newColors = colors.map(r => [...r]);
-          newColors[row] = res.data.result;
-          setColors(newColors);
+          // update colors
+          setColors(prev => {
+            const newColors = prev.map(r => [...r]);
+            newColors[row] = res.data.result;
+            return newColors;
+          });
 
           if (res.data.correctWord) {
             setCorrectWord(res.data.correctWord);
           }
 
+          // game over
           if (res.data.gameOver) {
             setGameOver(true);
 
@@ -104,6 +110,7 @@ function Game({ userId }: any) {
             return;
           }
 
+          // next row
           setRow(r => r + 1);
           setCol(0);
 
@@ -115,17 +122,18 @@ function Game({ userId }: any) {
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [gameId, gameOver, row, col]);
+  }, [gameId, gameOver, row, col, grid, playedToday]);
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="game-container">
       <h1>WORDLE</h1>
 
-      {!playedToday ? (
-        <h3>🌅 New Daily Challenge</h3>
-      ) : (
-        <h3>♻️ Practice Mode</h3>
-      )}
+      <h3>
+        {playedToday ? "♻️ Practice Mode" : "🌅 New Daily Challenge"}
+      </h3>
 
       {/* GRID */}
       <div className="grid">
@@ -135,7 +143,7 @@ function Game({ userId }: any) {
               const colorClass =
                 colors[i][j] === "green"
                   ? "green"
-                  : colors[i][j] === "gold"
+                  : colors[i][j] === "yellow"
                   ? "yellow"
                   : "gray";
 
@@ -152,11 +160,12 @@ function Game({ userId }: any) {
       {/* RESULT */}
       {gameOver && (
         <div className="result">
-          {lastGuess === correctWord ? (
-            "🎉 You Won!"
-          ) : (
+          {correctWord && (
             <>
-              ❌ You Lost! <br />
+              {colors[row]?.every(c => c === "green")
+                ? "🎉 You Won!"
+                : "❌ You Lost!"}
+              <br />
               <span style={{ opacity: 0.8 }}>
                 Correct word: <strong>{correctWord}</strong>
               </span>
