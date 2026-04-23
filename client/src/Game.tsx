@@ -2,16 +2,14 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
 function Game({ userId }: any) {
-
-  // ✅ FIX: move inside component
   const inputRef = useRef<string[]>(Array(5).fill(""));
 
   const [grid, setGrid] = useState(
-    Array(6).fill(null).map(() => Array(5).fill(""))
+    Array.from({ length: 6 }, () => Array(5).fill(""))
   );
 
   const [colors, setColors] = useState(
-    Array(6).fill(null).map(() => Array(5).fill("#222"))
+    Array.from({ length: 6 }, () => Array(5).fill("#222"))
   );
 
   const [row, setRow] = useState(0);
@@ -22,26 +20,17 @@ function Game({ userId }: any) {
   const [gameId, setGameId] = useState("");
   const [correctWord, setCorrectWord] = useState("");
 
-  const resetGame = () => {
-    setGrid(Array(6).fill(null).map(() => Array(5).fill("")));
-    setColors(Array(6).fill(null).map(() => Array(5).fill("#222")));
-    setRow(0);
-    setCol(0);
-    setGameOver(false);
-    setCorrectWord("");
-    setGameId("");
-    inputRef.current = Array(5).fill(""); // reset buffer
-  };
-
+  // ================= START GAME =================
   const startGame = async (type: "daily" | "practice") => {
-    const r = await axios.post(
+    const res = await axios.post(
       "https://wordle-game-h86q.onrender.com/game/start",
       { userId, type }
     );
 
-    setGameId(r.data.gameId);
+    setGameId(res.data.gameId);
   };
 
+  // ================= INIT =================
   useEffect(() => {
     axios
       .get(`https://wordle-game-h86q.onrender.com/game/daily/${userId}`)
@@ -49,12 +38,12 @@ function Game({ userId }: any) {
         const played = res.data.playedToday;
         setPlayedToday(played);
 
-        const type = played ? "practice" : "daily";
-        await startGame(type);
+        await startGame(played ? "practice" : "daily");
       });
   }, [userId]);
 
-  const handleSubmitGuess = async (guess: string) => {
+  // ================= SUBMIT GUESS =================
+  const submitGuess = async (guess: string) => {
     if (guess.length !== 5) return;
 
     const res = await axios.post(
@@ -67,8 +56,8 @@ function Game({ userId }: any) {
       return;
     }
 
-    setColors(prev => {
-      const copy = prev.map(r => [...r]);
+    setColors((prev) => {
+      const copy = prev.map((r) => [...r]);
       copy[row] = res.data.result;
       return copy;
     });
@@ -86,50 +75,55 @@ function Game({ userId }: any) {
           userId,
           attempts: res.data.attempts,
           won: res.data.isWin,
-          type: playedToday ? "practice" : "daily"
+          type: playedToday ? "practice" : "daily",
         }
       );
+
       return;
     }
 
-    setRow(r => r + 1);
+    setRow((r) => r + 1);
     setCol(0);
   };
 
+  // ================= KEYBOARD =================
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (!gameId || gameOver) return;
 
       const key = e.key.toUpperCase();
 
+      // LETTER
       if (/^[A-Z]$/.test(key) && col < 5) {
         inputRef.current[col] = key;
 
-        setGrid(prev => {
-          const copy = prev.map(r => [...r]);
+        setGrid((prev) => {
+          const copy = prev.map((r) => [...r]);
           copy[row][col] = key;
           return copy;
         });
 
-        setCol(c => c + 1);
+        setCol((c) => c + 1);
       }
 
+      // BACKSPACE
       else if (e.key === "Backspace" && col > 0) {
         inputRef.current[col - 1] = "";
 
-        setGrid(prev => {
-          const copy = prev.map(r => [...r]);
+        setGrid((prev) => {
+          const copy = prev.map((r) => [...r]);
           copy[row][col - 1] = "";
           return copy;
         });
 
-        setCol(c => c - 1);
+        setCol((c) => c - 1);
       }
 
+      // ENTER
       else if (e.key === "Enter" && col === 5) {
         const guess = inputRef.current.join("");
-        handleSubmitGuess(guess);
         inputRef.current = Array(5).fill("");
+        submitGuess(guess);
       }
     };
 
@@ -137,25 +131,48 @@ function Game({ userId }: any) {
     return () => window.removeEventListener("keydown", handleKey);
   }, [gameId, gameOver, row, col]);
 
+  // ================= UI =================
   return (
     <div className="game-container">
       <h1>WORDLE</h1>
 
       <h3>
-        {playedToday ? "♻️ Practice Mode" : "🌅 New Daily Challenge"}
+        {playedToday ? "♻️ Practice Mode" : "🌅 Daily Challenge"}
       </h3>
 
       <div className="grid">
         {grid.map((r, i) => (
           <div key={i} className="row">
-            {r.map((letter, j) => (
-              <div key={j} className="tile">
-                {letter}
-              </div>
-            ))}
+            {r.map((letter, j) => {
+              const color =
+                colors[i][j] === "green"
+                  ? "green"
+                  : colors[i][j] === "yellow"
+                  ? "yellow"
+                  : "gray";
+
+              return (
+                <div key={j} className={`tile ${color}`}>
+                  {letter}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
+
+      {gameOver && (
+        <div className="result">
+          {colors[row]?.every((c) => c === "green")
+            ? "🎉 You Won!"
+            : "❌ You Lost!"}
+
+          <br />
+          <span>
+            Correct word: <b>{correctWord}</b>
+          </span>
+        </div>
+      )}
     </div>
   );
 }
