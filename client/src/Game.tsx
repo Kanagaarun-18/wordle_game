@@ -45,34 +45,35 @@ function Game({ userId }: any) {
 
       const key = e.key.toUpperCase();
 
-      // LETTER
-      if (/^[A-Z]$/.test(key) && col < 5) {
-        const newGrid = grid.map(r => [...r]);
-        newGrid[row][col] = key;
-        setGrid(newGrid);
-        setCol(prev => prev + 1);
-      }
+      setGrid(prevGrid => {
+        const newGrid = prevGrid.map(r => [...r]);
 
-      // BACKSPACE
-      if (e.key === "Backspace" && col > 0) {
-        const newGrid = grid.map(r => [...r]);
-        newGrid[row][col - 1] = "";
-        setGrid(newGrid);
-        setCol(prev => prev - 1);
-      }
+        let newRow = row;
+        let newCol = col;
 
-      // ENTER
+        // LETTER
+        if (/^[A-Z]$/.test(key) && newCol < 5) {
+          newGrid[newRow][newCol] = key;
+          setCol(newCol + 1);
+        }
+
+        // BACKSPACE
+        else if (e.key === "Backspace" && newCol > 0) {
+          newGrid[newRow][newCol - 1] = "";
+          setCol(newCol - 1);
+        }
+
+        return newGrid;
+      });
+
+      // ENTER handled separately (IMPORTANT)
       if (e.key === "Enter" && col === 5) {
         const guess = grid[row].join("");
-        setLastGuess(guess);
 
         try {
           const res = await axios.post(
             "https://wordle-game-h86q.onrender.com/game/guess",
-            {
-              gameId,
-              guess
-            }
+            { gameId, guess }
           );
 
           if (!res.data.valid) {
@@ -91,17 +92,19 @@ function Game({ userId }: any) {
           if (res.data.gameOver) {
             setGameOver(true);
 
-            await axios.post("https://wordle-game-h86q.onrender.com/game/save", {
-              userId,
-              attempts: res.data.attempts,
-              won: res.data.isWin,
-              type: playedToday ? "practice" : "daily"
-            });
-
+            await axios.post(
+              "https://wordle-game-h86q.onrender.com/game/save",
+              {
+                userId,
+                attempts: res.data.attempts,
+                won: res.data.isWin,
+                type: playedToday ? "practice" : "daily"
+              }
+            );
             return;
           }
 
-          setRow(prev => prev + 1);
+          setRow(r => r + 1);
           setCol(0);
 
         } catch (err) {
@@ -112,7 +115,7 @@ function Game({ userId }: any) {
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [grid, row, col, colors, gameId, gameOver, playedToday]);
+  }, [gameId, gameOver, row, col]);
 
   return (
     <div className="game-container">
