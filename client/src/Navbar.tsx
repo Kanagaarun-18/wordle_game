@@ -14,7 +14,7 @@ function Navbar() {
 
   return (
     <div className="navbar">
-      <h2 onClick={() => navigate("/game")}>WORDLE</h2>
+      <h2 onClick={() => navigate("/wordle")}>WORDLE</h2>
 
       <div className="navbar-buttons">
         <button onClick={() => navigate("/leaderboard")}>Leaderboard</button>

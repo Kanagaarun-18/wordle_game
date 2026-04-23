@@ -6,14 +6,20 @@ function Profile({ userId }: any) {
   const [email, setEmail] = useState("");
 
   useEffect(() => {
+    if (!userId) return;
+
     axios
       .get(`https://wordle-game-h86q.onrender.com/game/stats/${userId}`)
-      .then(res => setStats(res.data));
-  }, []);
+      .then(res => setStats(res.data))
+      .catch(err => console.log("STATS ERROR:", err));
+  }, [userId]);
   useEffect(() => {
+    if (!userId) return;
+
     axios
       .get(`https://wordle-game-h86q.onrender.com/auth/user/${userId}`)
-      .then(res => setEmail(res.data.email));
+      .then(res => setEmail(res.data.email))
+      .catch(err => console.log("EMAIL ERROR:", err));
   }, [userId]);
 
   if (!stats) return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
