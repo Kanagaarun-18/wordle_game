@@ -4,25 +4,33 @@ import Login from "./Login";
 import Game from "./Game";
 
 function App() {
-  const [user, setUser] = useState(localStorage.getItem("userId"));
+  const [userId, setUserId] = useState(localStorage.getItem("userId"));
 
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Default route → LOGIN */}
+        {/* DEFAULT → LOGIN */}
         <Route
           path="/"
-          element={
-            user ? <Navigate to="/wordle" /> : <Login setUser={setUser} />
-          }
+          element={<Navigate to="/login" />}
         />
 
-        {/* Wordle protected route */}
+        {/* LOGIN */}
+        <Route
+          path="/login"
+          element={<Login setUser={setUserId} />}
+        />
+
+        {/* WORDLE (PROTECTED) */}
         <Route
           path="/wordle"
           element={
-            user ? <Game userId={user} /> : <Navigate to="/" />
+            userId ? (
+              <Game userId={userId} />
+            ) : (
+              <Navigate to="/login" />
+            )
           }
         />
 
