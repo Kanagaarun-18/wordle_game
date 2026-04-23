@@ -19,6 +19,7 @@ function App() {
       {userId && <Navbar />}
 
       <Routes>
+        <Route path="*" element={<Navigate to="/login" />} />
         <Route path="/" element={<Navigate to="/login" />} />
 
         <Route
