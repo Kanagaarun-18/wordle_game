@@ -19,7 +19,7 @@ function Game({ userId }: any) {
   const [correctWord, setCorrectWord] = useState("");
 
   // =========================
-  // RESET GAME (IMPORTANT)
+  // RESET GAME
   // =========================
   const resetGame = () => {
     setGrid(Array(6).fill(null).map(() => Array(5).fill("")));
@@ -64,7 +64,55 @@ function Game({ userId }: any) {
   };
 
   // =========================
-  // KEYBOARD HANDLER
+  // SUBMIT GUESS (FIXED CORE LOGIC)
+  // =========================
+  const handleSubmitGuess = async (guess: string) => {
+    try {
+      const res = await axios.post(
+        "https://wordle-game-h86q.onrender.com/game/guess",
+        { gameId, guess }
+      );
+
+      if (!res.data.valid) {
+        alert("Not a valid word");
+        return;
+      }
+
+      setColors(prev => {
+        const newColors = prev.map(r => [...r]);
+        newColors[row] = res.data.result;
+        return newColors;
+      });
+
+      if (res.data.correctWord) {
+        setCorrectWord(res.data.correctWord);
+      }
+
+      if (res.data.gameOver) {
+        setGameOver(true);
+
+        await axios.post(
+          "https://wordle-game-h86q.onrender.com/game/save",
+          {
+            userId,
+            attempts: res.data.attempts,
+            won: res.data.isWin,
+            type: playedToday ? "practice" : "daily"
+          }
+        );
+        return;
+      }
+
+      setRow(r => r + 1);
+      setCol(0);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // =========================
+  // KEYBOARD HANDLER (FIXED)
   // =========================
   useEffect(() => {
     const handleKey = async (e: KeyboardEvent) => {
@@ -72,7 +120,7 @@ function Game({ userId }: any) {
 
       const key = e.key.toUpperCase();
 
-      // LETTER
+      // LETTER INPUT
       if (/^[A-Z]$/.test(key) && col < 5) {
         setGrid(prev => {
           const newGrid = prev.map(r => [...r]);
@@ -92,53 +140,16 @@ function Game({ userId }: any) {
         setCol(c => c - 1);
       }
 
-      // ENTER
+      // ENTER (FIXED)
       else if (e.key === "Enter" && col === 5) {
-        const guess = [...grid[row]].join("");
-
-        const res = await axios.post(
-          "https://wordle-game-h86q.onrender.com/game/guess",
-          { gameId, guess }
-        );
-
-        if (!res.data.valid) {
-          alert("Not a valid word");
-          return;
-        }
-
-        setColors(prev => {
-          const newColors = prev.map(r => [...r]);
-          newColors[row] = res.data.result;
-          return newColors;
-        });
-
-        if (res.data.correctWord) {
-          setCorrectWord(res.data.correctWord);
-        }
-
-        if (res.data.gameOver) {
-          setGameOver(true);
-
-          await axios.post(
-            "https://wordle-game-h86q.onrender.com/game/save",
-            {
-              userId,
-              attempts: res.data.attempts,
-              won: res.data.isWin,
-              type: playedToday ? "practice" : "daily"
-            }
-          );
-          return;
-        }
-
-        setRow(r => r + 1);
-        setCol(0);
+        const guess = grid[row].slice().join("");
+        handleSubmitGuess(guess);
       }
     };
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [gameId, gameOver, row, col, grid, playedToday]);
+  }, [gameId, gameOver, row, col, grid]);
 
   // =========================
   // UI
@@ -185,7 +196,7 @@ function Game({ userId }: any) {
             Correct word: <strong>{correctWord}</strong>
           </span>
 
-          {/* REPLAY BUTTON (ONLY PRACTICE) */}
+          {/* REPLAY ONLY PRACTICE */}
           {playedToday && (
             <button className="replay-btn" onClick={replayPractice}>
               🔁 Replay Practice
