@@ -37,6 +37,7 @@ function Login({ setUser }: any) {
 
       localStorage.setItem("userId", res.data.userId);
       setUser(res.data.userId);
+      window.location.href = "/wordle";
     } catch (err) {
       alert("Invalid credentials");
     }

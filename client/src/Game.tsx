@@ -85,6 +85,24 @@ function Game({ userId }: any) {
     setCol(0);
   };
 
+  const replayPractice = async () => {
+    if (!playedToday) return;
+
+    setGrid(Array(6).fill(null).map(() => Array(5).fill("")));
+    setColors(Array(6).fill(null).map(() => Array(5).fill("empty")));
+    setRow(0);
+    setCol(0);
+    setGameOver(false);
+    setCorrectWord("");
+    buffer.current = Array(5).fill("");
+
+    const res = await axios.post(`${API}/game/start`, {
+      userId,
+      type: "practice"
+    });
+
+    setGameId(res.data.gameId);
+  };
   // ===============================
   // KEYBOARD
   // ===============================
@@ -171,6 +189,13 @@ function Game({ userId }: any) {
           <b>Correct Word: {correctWord}</b>
         </div>
       )}
+
+      {playedToday && (
+        <button className="replay-btn" onClick={replayPractice}>
+          🔁 Replay Practice
+        </button>
+      )}
+      
     </div>
   );
 }

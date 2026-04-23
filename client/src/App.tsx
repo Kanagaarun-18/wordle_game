@@ -1,24 +1,31 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login";
 import Game from "./Game";
-import Leaderboard from "./Leaderboard";
-import Navbar from "./Navbar";
-import Profile from "./Profile";
-import { useState } from "react";
 
 function App() {
-  const [user, setUser] = useState(localStorage.getItem("userId"));
-
-  if (!user) return <Login setUser={setUser} />;
+  const userId = localStorage.getItem("userId");
 
   return (
     <BrowserRouter>
-      <Navbar />
-
       <Routes>
-        <Route path="/game" element={<Game userId={user} />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/profile" element={<Profile userId={user} />} />
+
+        {/* DEFAULT ROUTE → LOGIN */}
+        <Route path="/" element={<Navigate to="/login" />} />
+
+        <Route path="/login" element={<Login />} />
+
+        {/* PROTECTED GAME ROUTE */}
+        <Route
+          path="/wordle"
+          element={
+            userId ? (
+              <Game userId={userId} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
       </Routes>
     </BrowserRouter>
   );
