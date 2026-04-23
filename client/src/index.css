@@ -1,0 +1,307 @@
+/* =========================
+   ROOT THEME VARIABLES
+========================= */
+
+/* DARK MODE (default) — Electric Pink + Black */
+:root {
+  --bg: #0a0a0a;
+  --text: #ffffff;
+  --card: #141414;
+  --border: #2a2a2a;
+
+  --primary: #ff2fd6; /* electric pink */
+  --primary-hover: #ff6ae6;
+
+  --tile-empty: #111;
+  --tile-border: #333;
+
+  --green: #00c896;
+  --yellow: #ffcc00;
+  --gray: #3a3a3c;
+}
+
+/* LIGHT MODE — Emerald + White */
+body.light {
+  --bg: #f8fffb;
+  --text: #0f172a;
+  --card: #ffffff;
+  --border: #d1d5db;
+
+  --primary: #10b981; /* emerald */
+  --primary-hover: #059669;
+
+  --tile-empty: #ffffff;
+  --tile-border: #d1d5db;
+
+  --green: #10b981;
+  --yellow: #f59e0b;
+  --gray: #9ca3af;
+}
+
+/* =========================
+   RESET
+========================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* =========================
+   BODY
+========================= */
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: 0.3s ease;
+}
+
+/* =========================
+   NAVBAR
+========================= */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 30px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.navbar h2 {
+  cursor: pointer;
+  letter-spacing: 3px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* =========================
+   BUTTONS
+========================= */
+button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* =========================
+   GAME CONTAINER
+========================= */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px;
+}
+
+h1 {
+  font-size: 36px;
+  letter-spacing: 4px;
+  color: var(--primary);
+}
+
+h3 {
+  opacity: 0.7;
+  margin-top: 10px;
+}
+
+/* =========================
+   GRID
+========================= */
+.grid {
+  margin-top: 25px;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+}
+
+/* =========================
+   TILE
+========================= */
+.tile {
+  width: 58px;
+  height: 58px;
+  margin: 6px;
+  border: 2px solid var(--tile-border);
+  background: var(--tile-empty);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+/* TILE FILLED */
+.tile:not(:empty) {
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* COLORS */
+.green {
+  background: var(--green);
+  color: white;
+  border: none;
+}
+
+.yellow {
+  background: var(--yellow);
+  color: white;
+  border: none;
+}
+
+.gray {
+  background: var(--gray);
+  color: white;
+  border: none;
+}
+
+/* =========================
+   RESULT
+========================= */
+.result {
+  margin-top: 25px;
+  font-size: 20px;
+}
+
+.result strong {
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+
+/* =========================
+   PROFILE / LEADERBOARD
+========================= */
+.page-container {
+  max-width: 500px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 10px;
+  transition: 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1.05); }
+}
+
+.tile:not(:empty) {
+  animation: pop 0.15s ease;
+}
+
+.navbar h2 {
+  text-shadow: 0 0 10px var(--primary);
+}
+
+/* =========================
+   AUTH PAGE
+========================= */
+
+.auth-container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  width: 320px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 30px 25px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+
+/* TITLE */
+.auth-card h2 {
+  margin-bottom: 5px;
+  color: var(--primary);
+}
+
+.subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-bottom: 20px;
+}
+
+/* INPUTS */
+.auth-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: 0.2s;
+}
+
+.auth-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 5px var(--primary);
+}
+
+/* BUTTONS */
+.auth-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.auth-btn.primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+}
+
+.auth-btn.primary:hover {
+  background: var(--primary-hover);
+}
+
+.auth-btn.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+/* DIVIDER */
+.divider {
+  margin: 15px 0;
+  font-size: 13px;
+  opacity: 0.6;
+}
