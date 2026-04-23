@@ -109,7 +109,7 @@ function Game({ userId }: any) {
       }
 
       else if (e.key === "Enter") {
-        const guess = buffer.current.join("");
+        const guess = buffer.current.join("").toLowerCase();
 
         if (guess.length !== 5) {
           alert("Enter 5 letters");
