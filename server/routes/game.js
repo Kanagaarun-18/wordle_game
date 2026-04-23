@@ -141,4 +141,95 @@ router.get("/daily/:userId", async (req, res) => {
   res.json({ playedToday: !!game });
 });
 
+router.get("/stats/:userId", async (req, res) => {
+  try {
+    const games = await Game.find({
+      userId: req.params.userId,
+      type: "daily"
+    });
+
+    const total = games.length;
+    const wins = games.filter(g => g.won).length;
+    const losses = total - wins;
+
+    const winPercentage =
+      total === 0 ? 0 : ((wins / total) * 100).toFixed(1);
+
+    const bestAttempt = wins
+      ? Math.min(...games.filter(g => g.won).map(g => g.attempts))
+      : null;
+
+    const avgAttempts = wins
+      ? (
+          games.filter(g => g.won)
+            .reduce((a, b) => a + b.attempts, 0) / wins
+        ).toFixed(2)
+      : null;
+
+    res.json({
+      totalGames: total,
+      wins,
+      losses,
+      winPercentage,
+      bestAttempt,
+      avgAttempts,
+      streak: 0
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ===============================
+// LEADERBOARD
+// ===============================
+router.get("/leaderboard", async (req, res) => {
+  try {
+    const data = await Game.aggregate([
+      { $match: { won: true, type: "daily" } },
+
+      { $sort: { attempts: 1, date: 1 } },
+
+      {
+        $group: {
+          _id: "$userId",
+          attempts: { $first: "$attempts" },
+          date: { $first: "$date" }
+        }
+      },
+
+      { $sort: { attempts: 1, date: 1 } },
+
+      { $limit: 10 },
+
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+
+      { $unwind: "$user" },
+
+      {
+        $project: {
+          _id: 0,
+          email: "$user.email",
+          attempts: 1,
+          date: 1
+        }
+      }
+    ]);
+
+    res.json(data);
+  } catch (err) {
+    console.error("LEADERBOARD ERROR:", err);
+    res.status(500).send("Server Error");
+  }
+});
+
 module.exports = router;

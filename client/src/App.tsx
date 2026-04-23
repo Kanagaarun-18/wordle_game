@@ -8,19 +8,13 @@ import Profile from "./Profile";
 
 function Board() {
   return (
-    <>
-    <h2>Leaderboard Page</h2>
     <Leaderboard />
-    </>
   );
 }
 
 function Prof() {
   return (
-    <>
-    <h2>Profile Page</h2>
     <Profile />
-    </>
   );
 }
 
