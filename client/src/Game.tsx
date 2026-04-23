@@ -161,8 +161,6 @@ function Game({ userId }: any) {
   }, [gameId, gameOver, row, col]);
 
   return (
-    <>
-    <Navbar />
     <div className="game-container">
       <h1>WORDLE</h1>
 
@@ -200,7 +198,6 @@ function Game({ userId }: any) {
       )}
 
     </div>
-    </>
   );
 }
 

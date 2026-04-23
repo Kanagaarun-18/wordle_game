@@ -3,13 +3,25 @@ import { useState } from "react";
 import Login from "./Login";
 import Game from "./Game";
 import Navbar from "./Navbar";
+import Leaderboard from "./Leaderboard";
+import Profile from "./Profile";
 
-function Leaderboard() {
-  return <h2>Leaderboard Page</h2>;
+function Board() {
+  return (
+    <>
+    <h2>Leaderboard Page</h2>
+    <Leaderboard />
+    </>
+  );
 }
 
-function Profile() {
-  return <h2>Profile Page</h2>;
+function Prof() {
+  return (
+    <>
+    <h2>Profile Page</h2>
+    <Profile />
+    </>
+  );
 }
 
 function App() {
@@ -35,8 +47,8 @@ function App() {
           }
         />
 
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/leaderboard" element={<Board />} />
+        <Route path="/profile" element={<Prof />} />
       </Routes>
     </BrowserRouter>
   );
