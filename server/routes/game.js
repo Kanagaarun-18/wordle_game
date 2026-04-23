@@ -3,7 +3,9 @@ const Game = require("../models/Game");
 const words = require("../utils/words");
 
 
-// Save game result
+// ===============================
+// SAVE GAME
+// ===============================
 router.post("/save", async (req, res) => {
   try {
     const { userId, attempts, won, type } = req.body;
@@ -13,7 +15,8 @@ router.post("/save", async (req, res) => {
       attempts,
       won,
       type: type || "daily",
-      date: new Date()
+      date: new Date(),
+      completed: true
     });
 
     await game.save();
@@ -26,17 +29,18 @@ router.post("/save", async (req, res) => {
 });
 
 
-// Leaderboard
+// ===============================
+// LEADERBOARD (BEST DAILY ONLY)
+// ===============================
 router.get("/leaderboard", async (req, res) => {
   try {
     const data = await Game.aggregate([
-      // Only winning games
       { $match: { won: true, type: "daily" } },
 
-      // Sort by attempts first, then by date (earlier = better)
+      // sort best first
       { $sort: { attempts: 1, date: 1 } },
 
-      // Group by user → pick best attempt automatically
+      // best game per user
       {
         $group: {
           _id: "$userId",
@@ -45,13 +49,10 @@ router.get("/leaderboard", async (req, res) => {
         }
       },
 
-      // Sort again after grouping
       { $sort: { attempts: 1, date: 1 } },
 
-      // Limit to top 10
       { $limit: 10 },
 
-      // Join with user collection
       {
         $lookup: {
           from: "users",
@@ -63,7 +64,6 @@ router.get("/leaderboard", async (req, res) => {
 
       { $unwind: "$user" },
 
-      // Clean response
       {
         $project: {
           _id: 0,
@@ -82,26 +82,31 @@ router.get("/leaderboard", async (req, res) => {
 });
 
 
+// ===============================
+// USER STATS
+// ===============================
 router.get("/stats/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const games = await Game.find({ userId, type: "daily"  }).sort({ date: 1 });
+    const games = await Game.find({
+      userId,
+      type: "daily"
+    }).sort({ date: -1 });
 
     const total = games.length;
     const wins = games.filter(g => g.won).length;
     const losses = total - wins;
 
-    // ✅ Win %
-    const winPercentage = total === 0 ? 0 : ((wins / total) * 100).toFixed(1);
+    const winPercentage =
+      total === 0 ? 0 : ((wins / total) * 100).toFixed(1);
 
-    // ✅ Best attempt
     const wonGames = games.filter(g => g.won);
+
     const bestAttempt = wonGames.length
       ? Math.min(...wonGames.map(g => g.attempts))
       : null;
 
-    // ✅ Avg attempts
     const avgAttempts = wonGames.length
       ? (
           wonGames.reduce((sum, g) => sum + g.attempts, 0) /
@@ -109,32 +114,30 @@ router.get("/stats/:userId", async (req, res) => {
         ).toFixed(2)
       : null;
 
-    // ✅ SAFE DATE-BASED STREAK
-    const uniqueDates = [
-      ...new Set(
-        wonGames.map(g => new Date(g.date).toDateString())
-      )
-    ];
-
-    const sortedDates = uniqueDates
-      .map(d => new Date(d))
-      .sort((a, b) => b - a);
+    // ===============================
+    // SAFE STREAK (FIXED)
+    // ===============================
+    const streakGames = await Game.find({
+      userId,
+      type: "daily",
+      won: true
+    }).sort({ date: -1 });
 
     let streak = 0;
-    let current = new Date();
-    current.setHours(0, 0, 0, 0);
 
-    for (let i = 0; i < sortedDates.length; i++) {
-      const gameDate = new Date(sortedDates[i]);
-      gameDate.setHours(0, 0, 0, 0);
+    let currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
 
-      const diff =
-        (current.getTime() - gameDate.getTime()) /
-        (1000 * 60 * 60 * 24);
+    for (let i = 0; i < streakGames.length; i++) {
+      const d = new Date(streakGames[i].date);
+      d.setHours(0, 0, 0, 0);
 
-      if (diff === 0 || diff === 1) {
+      const diffDays =
+        (currentDate - d) / (1000 * 60 * 60 * 24);
+
+      if (diffDays === 0 || diffDays === 1) {
         streak++;
-        current = gameDate;
+        currentDate = d;
       } else {
         break;
       }
@@ -156,27 +159,40 @@ router.get("/stats/:userId", async (req, res) => {
   }
 });
 
-//daily challenge status
+
+// ===============================
+// DAILY STATUS (FIXED)
+// ===============================
 router.get("/daily/:userId", async (req, res) => {
-  const { userId } = req.params;
+  try {
+    const { userId } = req.params;
 
-  const today = new Date().toDateString();
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
 
-  const game = await Game.findOne({
-    userId,
-    type: "daily",
-    date: {
-      $gte: new Date(today)
-    }
-  });
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
 
-  res.json({ playedToday: !!game });
+    const game = await Game.findOne({
+      userId,
+      type: "daily",
+      date: { $gte: start, $lte: end }
+    });
+
+    res.json({ playedToday: !!game });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
 });
 
+
+// ===============================
+// START GAME
+// ===============================
 router.post("/start", async (req, res) => {
   const { userId, type } = req.body;
 
-  // Check if already has active daily game
   const existing = await Game.findOne({
     userId,
     type,
@@ -187,8 +203,10 @@ router.post("/start", async (req, res) => {
     return res.json({ gameId: existing._id });
   }
 
-  // Generate word
-  const daysSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  const daysSinceEpoch = Math.floor(
+    Date.now() / (1000 * 60 * 60 * 24)
+  );
+
   const word =
     type === "daily"
       ? words[daysSinceEpoch % words.length]
@@ -199,7 +217,9 @@ router.post("/start", async (req, res) => {
     type,
     currentWord: word,
     attempts: 0,
-    won: false
+    won: false,
+    completed: false,
+    date: new Date()
   });
 
   await game.save();
@@ -207,6 +227,10 @@ router.post("/start", async (req, res) => {
   res.json({ gameId: game._id });
 });
 
+
+// ===============================
+// GUESS (FIXED LOGIC ORDER)
+// ===============================
 router.post("/guess", async (req, res) => {
   const { gameId, guess } = req.body;
 
@@ -218,30 +242,30 @@ router.post("/guess", async (req, res) => {
 
   const word = game.currentWord;
 
-  // Validate dictionary
+  // validate first
   if (!words.includes(guess)) {
     return res.json({ valid: false });
   }
 
-  // Check result
   const result = [];
 
   for (let i = 0; i < 5; i++) {
     if (guess[i] === word[i]) result.push("green");
     else if (word.includes(guess[i])) result.push("gold");
-    else result.push("gray");
+    else result.push("lightgray");
   }
 
-  game.attempts += 1;
-
   const isWin = guess === word;
+
+  // increment AFTER validation
+  game.attempts += 1;
 
   if (isWin) {
     game.won = true;
     game.completed = true;
   }
 
-  if (game.attempts === 6 && !isWin) {
+  if (game.attempts >= 6 && !isWin) {
     game.completed = true;
   }
 

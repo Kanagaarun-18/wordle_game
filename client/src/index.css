@@ -305,3 +305,20 @@ h3 {
   font-size: 13px;
   opacity: 0.6;
 }
+
+.replay-btn {
+  margin-top: 15px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #ff2e88;
+  color: white;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.replay-btn:hover {
+  transform: scale(1.05);
+  background: #ff4fa0;
+}
