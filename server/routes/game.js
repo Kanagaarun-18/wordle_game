@@ -102,6 +102,9 @@ router.post("/guess", async (req, res) => {
       return res.json({ valid: false });
     }
 
+    console.log("GAME FOUND:", game);
+    console.log("WORD:", game?.currentWord);
+    console.log("GUESS:", guess);
     // ===============================
     // RESULT CALCULATION
     // ===============================
