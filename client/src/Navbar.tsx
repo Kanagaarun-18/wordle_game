@@ -8,6 +8,14 @@ function Navbar() {
     window.location.href = "/login";
   };
 
+  const toggleTheme = () => {
+    document.body.classList.toggle("light");
+
+    // optional: persist theme
+    const isLight = document.body.classList.contains("light");
+    localStorage.setItem("theme", isLight ? "light" : "dark");
+  };
+
   return (
     <div className="navbar">
       <h2 onClick={() => navigate("/wordle")}>WORDLE</h2>
@@ -20,6 +28,8 @@ function Navbar() {
         <button onClick={() => navigate("/profile")}>
           Profile
         </button>
+
+        <button onClick={toggleTheme}>Theme</button>
 
         <button onClick={logout}>Logout</button>
       </div>
