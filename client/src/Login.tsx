@@ -24,7 +24,7 @@ function Login({ setUser }: any) {
     if (!validate()) return;
 
     try {
-      const res = await axios.post("http://localhost:5000/auth/login", {
+      const res = await axios.post("https://wordle-game-h86q.onrender.com/auth/login", {
         email,
         password
       });
@@ -40,7 +40,7 @@ function Login({ setUser }: any) {
     if (!validate()) return;
 
     try {
-      await axios.post("http://localhost:5000/auth/signup", {
+      await axios.post("https://wordle-game-h86q.onrender.com/auth/signup", {
         email,
         password
       });

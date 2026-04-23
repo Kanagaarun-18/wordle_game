@@ -22,14 +22,14 @@ function Game({ userId }: any) {
   // ✅ Start game (NO WORD IN FRONTEND)
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/game/daily/${userId}`)
+      .get(`https://wordle-game-h86q.onrender.com/game/daily/${userId}`)
       .then(async (res) => {
         const played = res.data.playedToday;
         setPlayedToday(played);
 
         const type = played ? "practice" : "daily";
 
-        const r = await axios.post("http://localhost:5000/game/start", {
+        const r = await axios.post("https://wordle-game-h86q.onrender.com/game/start", {
           userId,
           type
         });
@@ -68,7 +68,7 @@ function Game({ userId }: any) {
 
         try {
           const res = await axios.post(
-            "http://localhost:5000/game/guess",
+            "https://wordle-game-h86q.onrender.com/game/guess",
             {
               gameId,
               guess
@@ -91,7 +91,7 @@ function Game({ userId }: any) {
           if (res.data.gameOver) {
             setGameOver(true);
 
-            await axios.post("http://localhost:5000/game/save", {
+            await axios.post("https://wordle-game-h86q.onrender.com/game/save", {
               userId,
               attempts: res.data.attempts,
               won: res.data.isWin,

@@ -8,7 +8,9 @@ const path = require("path");
 const words = require("./utils/words");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "*"
+}));
 app.use(express.json());
 app.use("/auth", require("./routes/auth"));
 app.use("/game", require("./routes/game"));

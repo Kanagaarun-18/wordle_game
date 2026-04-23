@@ -7,12 +7,12 @@ function Profile({ userId }: any) {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/game/stats/${userId}`)
+      .get(`https://wordle-game-h86q.onrender.com/game/stats/${userId}`)
       .then(res => setStats(res.data));
   }, []);
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/auth/user/${userId}`)
+      .get(`https://wordle-game-h86q.onrender.com/auth/user/${userId}`)
       .then(res => setEmail(res.data.email));
   }, [userId]);
 

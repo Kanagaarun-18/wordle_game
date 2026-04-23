@@ -5,7 +5,7 @@ function Leaderboard() {
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/game/leaderboard")
+    axios.get("https://wordle-game-h86q.onrender.com/game/leaderboard")
       .then(res => setData(res.data));
   }, []);
 
