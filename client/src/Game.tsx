@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import Navbar from "./Navbar";
 
 const API = "https://wordle-game-h86q.onrender.com";
 
@@ -162,7 +161,6 @@ function Game({ userId }: any) {
 
   return (
     <div className="game-container">
-      <Navbar />
       <h1>WORDLE</h1>
 
       <h3>

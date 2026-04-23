@@ -1,32 +1,30 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Login from "./Login";
 import Game from "./Game";
+import Navbar from "./Navbar";
 import Leaderboard from "./Leaderboard";
 import Profile from "./Profile";
 
-function Board() {
-  return (
-    <Leaderboard />
-  );
-}
-
-function Prof() {
-  return (
-    <Profile />
-  );
-}
-
 function App() {
-  const [userId, setUserId] = useState(localStorage.getItem("userId"));
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // 🔥 LOAD FROM LOCALSTORAGE ON START
+  useEffect(() => {
+    setUserId(localStorage.getItem("userId"));
+  }, []);
 
   return (
     <BrowserRouter>
+      {userId && <Navbar />}
 
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
 
-        <Route path="/login" element={<Login setUser={setUserId} />} />
+        <Route
+          path="/login"
+          element={<Login setUser={setUserId} />}
+        />
 
         <Route
           path="/wordle"
@@ -39,8 +37,18 @@ function App() {
           }
         />
 
-        <Route path="/leaderboard" element={<Board />} />
-        <Route path="/profile" element={<Prof />} />
+        <Route
+          path="/profile"
+          element={
+            userId ? (
+              <Profile userId={userId} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Routes>
     </BrowserRouter>
   );

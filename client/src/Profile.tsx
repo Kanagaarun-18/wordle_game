@@ -13,6 +13,7 @@ function Profile({ userId }: any) {
       .then(res => setStats(res.data))
       .catch(err => console.log("STATS ERROR:", err));
   }, [userId]);
+
   useEffect(() => {
     if (!userId) return;
 
@@ -22,7 +23,8 @@ function Profile({ userId }: any) {
       .catch(err => console.log("EMAIL ERROR:", err));
   }, [userId]);
 
-  if (!stats) return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
+  if (!userId) return <h2>Not logged in</h2>;
+  if (!stats) return <h2>Loading...</h2>;
 
   return (
     <div className="page-container">
