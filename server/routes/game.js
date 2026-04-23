@@ -78,6 +78,7 @@ router.post("/start", async (req, res) => {
 // GUESS (CORE GAME ENGINE)
 // ===============================
 router.post("/guess", async (req, res) => {
+  console.log("🔥 GUESS ROUTE HIT");
   try {
     const { gameId, guess } = req.body;
 
