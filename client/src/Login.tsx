@@ -27,7 +27,13 @@ function Login({ setUser }: any) {
       const res = await axios.post("https://wordle-game-h86q.onrender.com/auth/login", {
         email,
         password
-      });
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
       localStorage.setItem("userId", res.data.userId);
       setUser(res.data.userId);
