@@ -24,21 +24,35 @@ router.post("/signup", async (req, res) => {
 // Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    console.log("LOGIN BODY:", req.body);
+    let { email, password } = req.body;
+
+    email = email.trim().toLowerCase();
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).send("User not found");
+    console.log("USER FOUND:", user);
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).send("Wrong password");
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
 
-    const token = jwt.sign({ id: user._id }, "secret");
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    res.json({ token, userId: user._id });
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    res.json({
+      userId: user._id,
+      email: user.email
+    });
+
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 });
+
 
 router.get("/user/:id", async (req, res) => {
   try {

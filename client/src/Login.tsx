@@ -25,7 +25,7 @@ function Login({ setUser }: any) {
 
     try {
       const res = await axios.post("https://wordle-game-h86q.onrender.com/auth/login", {
-        email,
+        email: email.trim().toLowerCase(),
         password
       },
       {
@@ -38,7 +38,8 @@ function Login({ setUser }: any) {
       localStorage.setItem("userId", res.data.userId);
       setUser(res.data.userId);
       window.location.href = "/wordle";
-    } catch (err) {
+    } catch (err:any) {
+      console.log("LOGIN ERROR:", err.response?.data);
       alert("Invalid credentials");
     }
   };
