@@ -1,22 +1,25 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function Login({ setUser }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const navigate = useNavigate();
 
   const validate = () => {
     if (!email || !password) {
       alert("All fields are required");
       return false;
     }
-    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
 
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!gmailRegex.test(email)) {
       alert("Enter a valid Gmail address");
       return false;
     }
-    
+
     return true;
   };
 
@@ -24,23 +27,30 @@ function Login({ setUser }: any) {
     if (!validate()) return;
 
     try {
-      const res = await axios.post("https://wordle-game-h86q.onrender.com/auth/login", {
-        email: email.trim().toLowerCase(),
-        password
-      },
-      {
-        headers: {
-          "Content-Type": "application/json"
+      const res = await axios.post(
+        "https://wordle-game-h86q.onrender.com/auth/login",
+        {
+          email: email.trim().toLowerCase(),
+          password
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
         }
-      }
-    );
+      );
+
+      console.log("LOGIN SUCCESS:", res.data);
 
       localStorage.setItem("userId", res.data.userId);
       setUser(res.data.userId);
-      window.location.href = "/wordle";
-    } catch (err:any) {
-      console.log("LOGIN ERROR:", err.response?.data);
-      alert("Invalid credentials");
+
+      // ✅ FIX: no window.location.reload
+      navigate("/wordle");
+
+    } catch (err: any) {
+      console.log("LOGIN ERROR:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Login failed");
     }
   };
 
@@ -48,13 +58,18 @@ function Login({ setUser }: any) {
     if (!validate()) return;
 
     try {
-      await axios.post("https://wordle-game-h86q.onrender.com/auth/signup", {
-        email,
-        password
-      });
+      await axios.post(
+        "https://wordle-game-h86q.onrender.com/auth/signup",
+        {
+          email: email.trim().toLowerCase(),
+          password
+        }
+      );
+
       alert("Signup successful! Now login.");
-    } catch {
-      alert("Signup failed");
+    } catch (err: any) {
+      console.log(err);
+      alert(err.response?.data?.message || "Signup failed");
     }
   };
 
