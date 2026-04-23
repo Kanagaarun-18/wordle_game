@@ -78,7 +78,9 @@ function Game({ userId }: any) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      console.log("KEY PRESSED:", e.key);
       if (!gameId || gameOver) return;
+      console.log("gameId:", gameId, "gameOver:", gameOver);
 
       const key = e.key.toUpperCase();
 
