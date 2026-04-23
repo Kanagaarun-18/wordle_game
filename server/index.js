@@ -9,7 +9,11 @@ const words = require("./utils/words");
 
 const app = express();
 app.use(cors({
-  origin: "https://wordle-game-beryl-three.vercel.app/",
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://wordle-game-beryl-three.vercel.app"
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
