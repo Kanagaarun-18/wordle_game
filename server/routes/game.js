@@ -3,47 +3,11 @@ const Game = require("../models/Game");
 const words = require("../utils/words");
 
 // ===============================
-// SAVE GAME (optional history)
-// ===============================
-router.post("/save", async (req, res) => {
-  try {
-    const { userId, attempts, won, type } = req.body;
-
-    const game = new Game({
-      userId,
-      attempts,
-      won,
-      type: type || "daily",
-      completed: true,
-      date: new Date()
-    });
-
-    await game.save();
-    res.json({ message: "Game saved" });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error saving game");
-  }
-});
-
-// ===============================
-// START GAME
+// START GAME (FIXED - ALWAYS SAFE)
 // ===============================
 router.post("/start", async (req, res) => {
   try {
     const { userId, type } = req.body;
-
-    // reuse unfinished game
-    const existing = await Game.findOne({
-      userId,
-      type,
-      completed: false
-    });
-
-    if (existing) {
-      return res.json({ gameId: existing._id });
-    }
 
     const daysSinceEpoch = Math.floor(
       Date.now() / (1000 * 60 * 60 * 24)
@@ -57,7 +21,7 @@ router.post("/start", async (req, res) => {
     const game = new Game({
       userId,
       type,
-      currentWord: word,
+      currentWord: word, // ✅ ALWAYS SET
       attempts: 0,
       won: false,
       completed: false,
@@ -67,63 +31,68 @@ router.post("/start", async (req, res) => {
     await game.save();
 
     res.json({ gameId: game._id });
-
   } catch (err) {
-    console.error(err);
+    console.error("START ERROR:", err);
     res.status(500).send("Server error");
   }
 });
 
 // ===============================
-// GUESS (CORE GAME ENGINE)
+// GUESS (NO CRASH VERSION)
 // ===============================
 router.post("/guess", async (req, res) => {
-  console.log("🔥 GUESS ROUTE HIT");
   try {
     const { gameId, guess } = req.body;
 
+    console.log("🔥 GUESS ROUTE HIT");
+
     const game = await Game.findById(gameId);
 
-    // safety checks
-    if (!game || game.completed) {
-      return res.status(400).json({ error: "Invalid game" });
+    if (!game) {
+      return res.status(400).json({ error: "Game not found" });
     }
 
-    const word = game.currentWord;
-
-    // prevent crash
-    if (!word || !guess) {
-      return res.status(500).json({
-        error: "Missing word or guess"
-      });
+    if (game.completed) {
+      return res.status(400).json({ error: "Game already completed" });
     }
 
-    // validate length only (IMPORTANT FIX)
-    if (guess.length !== 5) {
+    if (!game.currentWord) {
+      console.error("❌ Missing word in game:", game);
+      return res.status(500).json({ error: "Game has no word" });
+    }
+
+    const word = game.currentWord.toLowerCase();
+
+    if (!guess || guess.length !== 5) {
       return res.json({ valid: false });
     }
 
-    console.log("GAME FOUND:", game);
-    console.log("WORD:", game?.currentWord);
-    console.log("GUESS:", guess);
+    const cleanGuess = guess.toLowerCase();
+
+    // ===============================
+    // VALIDATION
+    // ===============================
+    if (!words.includes(cleanGuess)) {
+      return res.json({ valid: false });
+    }
+
     // ===============================
     // RESULT CALCULATION
     // ===============================
     const result = [];
 
     for (let i = 0; i < 5; i++) {
-      if (guess[i] === word[i]) {
+      if (cleanGuess[i] === word[i]) {
         result.push("green");
-      } else if (word.includes(guess[i])) {
+      } else if (word.includes(cleanGuess[i])) {
         result.push("yellow");
       } else {
         result.push("gray");
       }
     }
 
-    const isWin = guess === word;
+    const isWin = cleanGuess === word;
 
-    // update game state
     game.attempts += 1;
 
     if (isWin) {
@@ -147,8 +116,8 @@ router.post("/guess", async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server crash in guess route" });
+    console.error("GUESS ERROR:", err);
+    return res.status(500).json({ error: "Server crash" });
   }
 });
 
@@ -180,88 +149,27 @@ router.get("/daily/:userId", async (req, res) => {
 });
 
 // ===============================
-// LEADERBOARD (BEST PER USER)
+// SAVE GAME
 // ===============================
-router.get("/leaderboard", async (req, res) => {
+router.post("/save", async (req, res) => {
   try {
-    const data = await Game.aggregate([
-      { $match: { won: true, type: "daily" } },
-      { $sort: { attempts: 1, date: 1 } },
+    const { userId, attempts, won, type } = req.body;
 
-      {
-        $group: {
-          _id: "$userId",
-          attempts: { $first: "$attempts" },
-          date: { $first: "$date" }
-        }
-      },
-
-      { $sort: { attempts: 1, date: 1 } },
-      { $limit: 10 },
-
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "user"
-        }
-      },
-
-      { $unwind: "$user" },
-
-      {
-        $project: {
-          _id: 0,
-          email: "$user.email",
-          attempts: 1,
-          date: 1
-        }
-      }
-    ]);
-
-    res.json(data);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server Error");
-  }
-});
-
-// ===============================
-// STATS
-// ===============================
-router.get("/stats/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const games = await Game.find({
+    const game = new Game({
       userId,
-      type: "daily"
+      attempts,
+      won,
+      type: type || "daily",
+      completed: true,
+      date: new Date()
     });
 
-    const total = games.length;
-    const wins = games.filter(g => g.won).length;
-    const losses = total - wins;
-
-    const winPercentage =
-      total === 0 ? 0 : ((wins / total) * 100).toFixed(1);
-
-    const bestAttempt = games.length
-      ? Math.min(...games.filter(g => g.won).map(g => g.attempts))
-      : null;
-
-    res.json({
-      totalGames: total,
-      wins,
-      losses,
-      winPercentage,
-      bestAttempt
-    });
+    await game.save();
+    res.json({ message: "Game saved" });
 
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server Error");
+    res.status(500).send("Error saving game");
   }
 });
 
