@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import Navbar from "./Navbar";
 
 const API = "https://wordle-game-h86q.onrender.com";
 
@@ -160,6 +161,8 @@ function Game({ userId }: any) {
   }, [gameId, gameOver, row, col]);
 
   return (
+    <>
+    <Navbar />
     <div className="game-container">
       <h1>WORDLE</h1>
 
@@ -195,8 +198,9 @@ function Game({ userId }: any) {
           🔁 Replay Practice
         </button>
       )}
-      
+
     </div>
+    </>
   );
 }
 
