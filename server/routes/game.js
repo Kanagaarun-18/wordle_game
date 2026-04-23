@@ -2,26 +2,45 @@ const router = require("express").Router();
 const Game = require("../models/Game");
 const words = require("../utils/words");
 
+// normalize words once
+const WORD_LIST = words.map(w => w.trim().toLowerCase());
+
 // ===============================
-// START GAME (FIXED - ALWAYS SAFE)
+// START GAME
 // ===============================
 router.post("/start", async (req, res) => {
   try {
     const { userId, type } = req.body;
 
-    const daysSinceEpoch = Math.floor(
+    // DAILY: reuse today's game
+    if (type === "daily") {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+
+      const existing = await Game.findOne({
+        userId,
+        type: "daily",
+        date: { $gte: start }
+      });
+
+      if (existing) {
+        return res.json({ gameId: existing._id });
+      }
+    }
+
+    const index = Math.floor(
       Date.now() / (1000 * 60 * 60 * 24)
-    );
+    ) % WORD_LIST.length;
 
     const word =
       type === "daily"
-        ? words[daysSinceEpoch % words.length]
-        : words[Math.floor(Math.random() * words.length)];
+        ? WORD_LIST[index]
+        : WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
 
     const game = new Game({
       userId,
       type,
-      currentWord: word, // ✅ ALWAYS SET
+      currentWord: word,
       attempts: 0,
       won: false,
       completed: false,
@@ -38,13 +57,13 @@ router.post("/start", async (req, res) => {
 });
 
 // ===============================
-// GUESS (NO CRASH VERSION)
+// GUESS
 // ===============================
 router.post("/guess", async (req, res) => {
   try {
     const { gameId, guess } = req.body;
 
-    console.log("🔥 GUESS ROUTE HIT");
+    console.log("GUESS:", guess);
 
     const game = await Game.findById(gameId);
 
@@ -53,42 +72,27 @@ router.post("/guess", async (req, res) => {
     }
 
     if (game.completed) {
-      return res.status(400).json({ error: "Game already completed" });
+      return res.status(400).json({ error: "Game completed" });
     }
 
-    if (!game.currentWord) {
-      console.error("❌ Missing word in game:", game);
-      return res.status(500).json({ error: "Game has no word" });
-    }
+    const word = (game.currentWord || "").toLowerCase();
+    const cleanGuess = (guess || "").toLowerCase();
 
-    const word = game.currentWord.toLowerCase();
-
-    if (!guess || guess.length !== 5) {
+    if (!word || cleanGuess.length !== 5) {
       return res.json({ valid: false });
     }
 
-    const cleanGuess = guess.toLowerCase();
-
-    // ===============================
-    // VALIDATION
-    // ===============================
-    if (!words.includes(cleanGuess)) {
+    // dictionary check
+    if (!WORD_LIST.includes(cleanGuess)) {
       return res.json({ valid: false });
     }
 
-    // ===============================
-    // RESULT CALCULATION
-    // ===============================
     const result = [];
 
     for (let i = 0; i < 5; i++) {
-      if (cleanGuess[i] === word[i]) {
-        result.push("green");
-      } else if (word.includes(cleanGuess[i])) {
-        result.push("yellow");
-      } else {
-        result.push("gray");
-      }
+      if (cleanGuess[i] === word[i]) result.push("green");
+      else if (word.includes(cleanGuess[i])) result.push("yellow");
+      else result.push("gray");
     }
 
     const isWin = cleanGuess === word;
@@ -106,7 +110,7 @@ router.post("/guess", async (req, res) => {
 
     await game.save();
 
-    return res.json({
+    res.json({
       valid: true,
       result,
       isWin,
@@ -117,7 +121,7 @@ router.post("/guess", async (req, res) => {
 
   } catch (err) {
     console.error("GUESS ERROR:", err);
-    return res.status(500).json({ error: "Server crash" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -125,52 +129,16 @@ router.post("/guess", async (req, res) => {
 // DAILY STATUS
 // ===============================
 router.get("/daily/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
 
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+  const game = await Game.findOne({
+    userId: req.params.userId,
+    type: "daily",
+    date: { $gte: start }
+  });
 
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-
-    const game = await Game.findOne({
-      userId,
-      type: "daily",
-      date: { $gte: start, $lte: end }
-    });
-
-    res.json({ playedToday: !!game });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
-  }
-});
-
-// ===============================
-// SAVE GAME
-// ===============================
-router.post("/save", async (req, res) => {
-  try {
-    const { userId, attempts, won, type } = req.body;
-
-    const game = new Game({
-      userId,
-      attempts,
-      won,
-      type: type || "daily",
-      completed: true,
-      date: new Date()
-    });
-
-    await game.save();
-    res.json({ message: "Game saved" });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error saving game");
-  }
+  res.json({ playedToday: !!game });
 });
 
 module.exports = router;

@@ -22,12 +22,16 @@ function Game({ userId }: any) {
 
   const buffer = useRef<string[]>(Array(5).fill(""));
 
+  // ===============================
+  // INIT GAME
+  // ===============================
   useEffect(() => {
     const init = async () => {
       const res = await axios.get(`${API}/game/daily/${userId}`);
 
-      const type = res.data.playedToday ? "practice" : "daily";
       setPlayedToday(res.data.playedToday);
+
+      const type = res.data.playedToday ? "practice" : "daily";
 
       const start = await axios.post(`${API}/game/start`, {
         userId,
@@ -40,6 +44,9 @@ function Game({ userId }: any) {
     init();
   }, [userId]);
 
+  // ===============================
+  // SUBMIT
+  // ===============================
   const submitGuess = async (guess: string) => {
     const res = await axios.post(`${API}/game/guess`, {
       gameId,
@@ -51,9 +58,11 @@ function Game({ userId }: any) {
       return;
     }
 
-    const newColors = [...colors];
-    newColors[row] = res.data.result;
-    setColors(newColors);
+    setColors(prev => {
+      const copy = prev.map(r => [...r]);
+      copy[row] = res.data.result;
+      return copy;
+    });
 
     if (res.data.correctWord) {
       setCorrectWord(res.data.correctWord);
@@ -76,11 +85,12 @@ function Game({ userId }: any) {
     setCol(0);
   };
 
+  // ===============================
+  // KEYBOARD
+  // ===============================
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      console.log("KEY PRESSED:", e.key);
       if (!gameId || gameOver) return;
-      console.log("gameId:", gameId, "gameOver:", gameOver);
 
       const key = e.key.toUpperCase();
 
@@ -89,9 +99,11 @@ function Game({ userId }: any) {
 
         buffer.current[col] = key;
 
-        const copy = [...grid];
-        copy[row][col] = key;
-        setGrid(copy);
+        setGrid(prev => {
+          const copy = prev.map(r => [...r]);
+          copy[row][col] = key;
+          return copy;
+        });
 
         setCol(c => c + 1);
       }
@@ -101,15 +113,19 @@ function Game({ userId }: any) {
 
         buffer.current[col - 1] = "";
 
-        const copy = [...grid];
-        copy[row][col - 1] = "";
-        setGrid(copy);
+        setGrid(prev => {
+          const copy = prev.map(r => [...r]);
+          copy[row][col - 1] = "";
+          return copy;
+        });
 
         setCol(c => c - 1);
       }
 
       else if (e.key === "Enter") {
         const guess = buffer.current.join("").toLowerCase();
+
+        console.log("ENTER:", guess);
 
         if (guess.length !== 5) {
           alert("Enter 5 letters");
@@ -123,7 +139,7 @@ function Game({ userId }: any) {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [gameId, gameOver, row, col, grid]);
+  }, [gameId, gameOver, row, col]);
 
   return (
     <div className="game-container">
