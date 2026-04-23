@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useRef } from "react";
+
+const inputRef = useRef<string[]>(Array(5).fill(""));
 
 function Game({ userId }: any) {
   const [grid, setGrid] = useState(
@@ -67,48 +70,45 @@ function Game({ userId }: any) {
   // SUBMIT GUESS (FIXED CORE LOGIC)
   // =========================
   const handleSubmitGuess = async (guess: string) => {
-    try {
-      const res = await axios.post(
-        "https://wordle-game-h86q.onrender.com/game/guess",
-        { gameId, guess }
-      );
+    if (guess.length !== 5) return;
 
-      if (!res.data.valid) {
-        alert("Not a valid word");
-        return;
-      }
+    const res = await axios.post(
+      "https://wordle-game-h86q.onrender.com/game/guess",
+      { gameId, guess }
+    );
 
-      setColors(prev => {
-        const newColors = prev.map(r => [...r]);
-        newColors[row] = res.data.result;
-        return newColors;
-      });
-
-      if (res.data.correctWord) {
-        setCorrectWord(res.data.correctWord);
-      }
-
-      if (res.data.gameOver) {
-        setGameOver(true);
-
-        await axios.post(
-          "https://wordle-game-h86q.onrender.com/game/save",
-          {
-            userId,
-            attempts: res.data.attempts,
-            won: res.data.isWin,
-            type: playedToday ? "practice" : "daily"
-          }
-        );
-        return;
-      }
-
-      setRow(r => r + 1);
-      setCol(0);
-
-    } catch (err) {
-      console.error(err);
+    if (!res.data.valid) {
+      alert("Not a valid word");
+      return;
     }
+
+    setColors(prev => {
+      const copy = prev.map(r => [...r]);
+      copy[row] = res.data.result;
+      return copy;
+    });
+
+    if (res.data.correctWord) {
+      setCorrectWord(res.data.correctWord);
+    }
+
+    if (res.data.gameOver) {
+      setGameOver(true);
+
+      await axios.post(
+        "https://wordle-game-h86q.onrender.com/game/save",
+        {
+          userId,
+          attempts: res.data.attempts,
+          won: res.data.isWin,
+          type: playedToday ? "practice" : "daily"
+        }
+      );
+      return;
+    }
+
+    setRow(r => r + 1);
+    setCol(0);
   };
 
   // =========================
@@ -120,36 +120,46 @@ function Game({ userId }: any) {
 
       const key = e.key.toUpperCase();
 
-      // LETTER INPUT
+      // LETTER
       if (/^[A-Z]$/.test(key) && col < 5) {
+        inputRef.current[col] = key;
+
         setGrid(prev => {
-          const newGrid = prev.map(r => [...r]);
-          newGrid[row][col] = key;
-          return newGrid;
+          const copy = prev.map(r => [...r]);
+          copy[row][col] = key;
+          return copy;
         });
+
         setCol(c => c + 1);
       }
 
       // BACKSPACE
       else if (e.key === "Backspace" && col > 0) {
+        inputRef.current[col - 1] = "";
+
         setGrid(prev => {
-          const newGrid = prev.map(r => [...r]);
-          newGrid[row][col - 1] = "";
-          return newGrid;
+          const copy = prev.map(r => [...r]);
+          copy[row][col - 1] = "";
+          return copy;
         });
+
         setCol(c => c - 1);
       }
 
-      // ENTER (FIXED)
+      // ENTER (NOW 100% RELIABLE)
       else if (e.key === "Enter" && col === 5) {
-        const guess = grid[row].slice().join("");
-        handleSubmitGuess(guess);
+        const guess = inputRef.current.join("");
+
+        await handleSubmitGuess(guess);
+
+        // reset buffer after submit
+        inputRef.current = Array(5).fill("");
       }
     };
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [gameId, gameOver, row, col, grid]);
+  }, [gameId, gameOver, row, col]);
 
   // =========================
   // UI
