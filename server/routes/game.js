@@ -129,16 +129,27 @@ router.post("/guess", async (req, res) => {
 // DAILY STATUS
 // ===============================
 router.get("/daily/:userId", async (req, res) => {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  try {
+    const { userId } = req.params;
 
-  const game = await Game.findOne({
-    userId: req.params.userId,
-    type: "daily",
-    date: { $gte: start }
-  });
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
 
-  res.json({ playedToday: !!game });
+    const game = await Game.findOne({
+      userId,
+      type: "daily",
+      date: { $gte: start }
+    });
+
+    const playedToday =
+      game && (game.attempts > 0 || game.completed);
+
+    res.json({ playedToday });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
 });
 
 router.get("/stats/:userId", async (req, res) => {
